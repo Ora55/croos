@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מעקב אימונים</title>
+    <title>מעקב אימונים מדויק</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,106 +12,244 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            color: white;
         }
         #app {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 10px;
             max-width: 500px;
             width: 100%;
         }
-        h1 {
-            text-align: center;
-        }
-        #workoutSteps {
-            margin-top: 20px;
-        }
-        .step {
-            margin-bottom: 10px;
-        }
-        input[type="number"] {
-            width: 100px;
-        }
-        button {
+        input, button {
             display: block;
-            margin: 20px auto;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            padding: 5px;
         }
         #results {
+            display: none;
+        }
+        #uploadedImage {
+            max-width: 100%;
+            margin-bottom: 10px;
+        }
+        .exercise-input {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .exercise-input input[type="number"] {
+            width: 100px;
+        }
+        .pagination {
+            display: flex;
+            justify-content: space-between;
             margin-top: 20px;
+        }
+        .pagination button {
+            width: auto;
+        }
+        #congratsVideo {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <h1>מעקב אימונים</h1>
+        <h1>מעקב אימונים מדויק</h1>
         <input type="file" id="imageUpload" accept="image/*">
-        <div id="workoutSteps"></div>
-        <button id="finishBtn" style="display: none;">סיום</button>
+        <img id="uploadedImage" style="display: none;">
         <div id="results"></div>
+        <div class="pagination" style="display: none;">
+            <button id="prevPage">הקודם</button>
+            <span id="pageInfo"></span>
+            <button id="nextPage">הבא</button>
+        </div>
+        <button id="finishTracking" style="display: none;">סיים</button>
+        <div id="summary" style="display: none;">
+            <h2>סיכום האימון:</h2>
+            <div id="workoutSummary"></div>
+            <button id="saveResults">שמור תוצאות</button>
+            <button id="completeWorkout">סיים אימון</button>
+        </div>
     </div>
 
     <audio id="backgroundMusic" loop>
         <source src="back.mp3" type="audio/mpeg">
     </audio>
+    <video id="congratsVideo">
+        <source src="cong.mp4" type="video/mp4">
+    </video>
 
     <script>
         const imageUpload = document.getElementById('imageUpload');
-        const workoutSteps = document.getElementById('workoutSteps');
-        const finishBtn = document.getElementById('finishBtn');
+        const uploadedImage = document.getElementById('uploadedImage');
         const results = document.getElementById('results');
+        const pagination = document.querySelector('.pagination');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const pageInfo = document.getElementById('pageInfo');
+        const finishTrackingBtn = document.getElementById('finishTracking');
+        const summary = document.getElementById('summary');
+        const workoutSummary = document.getElementById('workoutSummary');
+        const saveResultsBtn = document.getElementById('saveResults');
+        const completeWorkoutBtn = document.getElementById('completeWorkout');
         const backgroundMusic = document.getElementById('backgroundMusic');
+        const congratsVideo = document.getElementById('congratsVideo');
 
-        imageUpload.addEventListener('change', function(event) {
+        let exerciseList = [];
+        let currentPage = 1;
+        const exercisesPerPage = 5;
+        let exerciseValues = {};
+
+        imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
-                // כאן יש להוסיף לוגיקה לעיבוד התמונה ויצירת שלבי האימון
-                // לצורך הדגמה, ניצור כמה שלבים קבועים
-                const steps = [
-                    { name: 'ריצה', unit: 'מטרים' },
-                    { name: 'משקולות', unit: 'ק"ג' },
-                    { name: 'מתח', unit: 'חזרות' },
-                    { name: 'פלאנק', unit: 'שניות' }
-                ];
-
-                workoutSteps.innerHTML = '';
-                steps.forEach((step, index) => {
-                    const stepElement = document.createElement('div');
-                    stepElement.classList.add('step');
-                    stepElement.innerHTML = `
-                        <label for="step${index}">${step.name} (${step.unit}):</label>
-                        <input type="number" id="step${index}" name="step${index}" min="0" step="0.01">
-                    `;
-                    workoutSteps.appendChild(stepElement);
-                });
-
-                finishBtn.style.display = 'block';
-                backgroundMusic.play();
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.style.display = 'block';
+                    results.style.display = 'block';
+                    finishTrackingBtn.style.display = 'block';
+                    backgroundMusic.play();
+                    
+                    // In a real application, this is where you'd process the image to extract exercises.
+                    // For this example, we'll use a mock list of exercises.
+                    exerciseList = [
+                        { name: "Deadlift", unit: "kg" },
+                        { name: "Bench Press", unit: "kg" },
+                        { name: "Squats", unit: "kg" },
+                        { name: "Pull-ups", unit: "reps" },
+                        { name: "Plank", unit: "seconds" },
+                        { name: "Running", unit: "km" },
+                        { name: "Shoulder Press", unit: "kg" },
+                        { name: "Bicep Curls", unit: "kg" },
+                        { name: "Leg Press", unit: "kg" },
+                        { name: "Crunches", unit: "reps" }
+                    ];
+                    displayTrackingInputs();
+                    updatePagination();
+                };
+                reader.readAsDataURL(file);
             }
         });
 
-        finishBtn.addEventListener('click', function() {
-            const inputs = workoutSteps.querySelectorAll('input[type="number"]');
-            let resultHTML = '<h2>תוצאות האימון:</h2><ul>';
+        function displayTrackingInputs() {
+            const startIndex = (currentPage - 1) * exercisesPerPage;
+            const endIndex = startIndex + exercisesPerPage;
+            const currentExercises = exerciseList.slice(startIndex, endIndex);
 
-            inputs.forEach(input => {
-                const label = input.previousElementSibling.textContent;
-                const value = input.value;
-                if (value) {
-                    resultHTML += `<li>${label} ${value}</li>`;
-                }
+            results.innerHTML = '<h2>הזן את התוצאות שלך:</h2>';
+            currentExercises.forEach((exercise, index) => {
+                const exerciseDiv = document.createElement('div');
+                exerciseDiv.className = 'exercise-input';
+                const inputId = `exercise-${startIndex + index}`;
+                exerciseDiv.innerHTML = `
+                    <label>${exercise.name} (${exercise.unit}): </label>
+                    <input type="number" id="${inputId}" placeholder="הזן תוצאה" value="${exerciseValues[inputId] || ''}">
+                `;
+                results.appendChild(exerciseDiv);
             });
 
-            resultHTML += '</ul>';
-            results.innerHTML = resultHTML;
+            // Add event listeners to save values when changed
+            currentExercises.forEach((_, index) => {
+                const inputId = `exercise-${startIndex + index}`;
+                document.getElementById(inputId).addEventListener('change', (e) => {
+                    exerciseValues[inputId] = e.target.value;
+                });
+            });
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(exerciseList.length / exercisesPerPage);
+            if (totalPages > 1) {
+                pagination.style.display = 'flex';
+                pageInfo.textContent = `עמוד ${currentPage} מתוך ${totalPages}`;
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                saveCurrentPageValues();
+                currentPage--;
+                displayTrackingInputs();
+                updatePagination();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            if (currentPage < Math.ceil(exerciseList.length / exercisesPerPage)) {
+                saveCurrentPageValues();
+                currentPage++;
+                displayTrackingInputs();
+                updatePagination();
+            }
+        });
+
+        function saveCurrentPageValues() {
+            const inputs = results.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                exerciseValues[input.id] = input.value;
+            });
+        }
+
+        finishTrackingBtn.addEventListener('click', () => {
+            saveCurrentPageValues();
+            const summaryResults = exerciseList
+                .map((exercise, index) => {
+                    const value = exerciseValues[`exercise-${index}`];
+                    if (value && value.trim() !== '') {
+                        return `${exercise.name}: ${value} ${exercise.unit}`;
+                    }
+                    return null;
+                })
+                .filter(result => result !== null);
+
+            if (summaryResults.length === 0) {
+                workoutSummary.textContent = "לא הוזנו תוצאות.";
+            } else {
+                workoutSummary.textContent = summaryResults.join('\n');
+            }
+            
+            results.style.display = 'none';
+            pagination.style.display = 'none';
+            finishTrackingBtn.style.display = 'none';
+            summary.style.display = 'block';
+        });
+
+        saveResultsBtn.addEventListener('click', () => {
+            const blob = new Blob([workoutSummary.textContent], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'workout_results.txt';
+            a.click();
+        });
+
+        completeWorkoutBtn.addEventListener('click', () => {
             backgroundMusic.pause();
+            congratsVideo.style.display = 'block';
+            congratsVideo.play();
+            summary.style.display = 'none';
+        });
+
+        congratsVideo.addEventListener('ended', () => {
+            congratsVideo.style.display = 'none';
+            // Here you might want to reset the app or show a "start new workout" button
         });
     </script>
 </body>
