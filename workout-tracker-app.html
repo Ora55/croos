@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעקב אימונים</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('cross.jpg');
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #app {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+        }
+        #workoutSteps {
+            margin-top: 20px;
+        }
+        .step {
+            margin-bottom: 10px;
+        }
+        input[type="number"] {
+            width: 100px;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>מעקב אימונים</h1>
+        <input type="file" id="imageUpload" accept="image/*">
+        <div id="workoutSteps"></div>
+        <button id="finishBtn" style="display: none;">סיום</button>
+        <div id="results"></div>
+    </div>
+
+    <audio id="backgroundMusic" loop>
+        <source src="back.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const workoutSteps = document.getElementById('workoutSteps');
+        const finishBtn = document.getElementById('finishBtn');
+        const results = document.getElementById('results');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+
+        imageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // כאן יש להוסיף לוגיקה לעיבוד התמונה ויצירת שלבי האימון
+                // לצורך הדגמה, ניצור כמה שלבים קבועים
+                const steps = [
+                    { name: 'ריצה', unit: 'מטרים' },
+                    { name: 'משקולות', unit: 'ק"ג' },
+                    { name: 'מתח', unit: 'חזרות' },
+                    { name: 'פלאנק', unit: 'שניות' }
+                ];
+
+                workoutSteps.innerHTML = '';
+                steps.forEach((step, index) => {
+                    const stepElement = document.createElement('div');
+                    stepElement.classList.add('step');
+                    stepElement.innerHTML = `
+                        <label for="step${index}">${step.name} (${step.unit}):</label>
+                        <input type="number" id="step${index}" name="step${index}" min="0" step="0.01">
+                    `;
+                    workoutSteps.appendChild(stepElement);
+                });
+
+                finishBtn.style.display = 'block';
+                backgroundMusic.play();
+            }
+        });
+
+        finishBtn.addEventListener('click', function() {
+            const inputs = workoutSteps.querySelectorAll('input[type="number"]');
+            let resultHTML = '<h2>תוצאות האימון:</h2><ul>';
+
+            inputs.forEach(input => {
+                const label = input.previousElementSibling.textContent;
+                const value = input.value;
+                if (value) {
+                    resultHTML += `<li>${label} ${value}</li>`;
+                }
+            });
+
+            resultHTML += '</ul>';
+            results.innerHTML = resultHTML;
+            backgroundMusic.pause();
+        });
+    </script>
+</body>
+</html>
